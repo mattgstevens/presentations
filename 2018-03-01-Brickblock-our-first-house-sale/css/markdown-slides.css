@@ -3,7 +3,6 @@
 /* @import url(http://fonts.googleapis.com/css?family=Open+Sans:regular,semibold,italic,italicsemibold|PT+Sans:400,700,400italic,700italic|PT+Serif:400,700,400italic,700italic|Cutive+Mono); */
 @import url(fonts.css);
 
-
 /***** Fallback message *****/
 
 .fallback-message {
@@ -14,9 +13,9 @@
   padding: 10px 10px 0;
   margin: 20px auto;
 
-  border: 1px solid #E4C652;
+  border: 1px solid #e4c652;
   border-radius: 10px;
-  background: #EEDC94;
+  background: #eedc94;
 }
 
 .fallback-message p {
@@ -31,13 +30,13 @@
 
 #step-3 img {
   position: absolute;
-  top: 200px;
+  top: 250px;
   left: 30px;
   width: 840px;
 }
 
 div#tilted-slide {
-  text-shadow: 20px 20px 10px rgba(0, 0, 0, .4);
+  text-shadow: 20px 20px 10px rgba(0, 0, 0, 0.4);
 }
 div#tilted-slide h1 {
   margin-top: 200px;
@@ -72,7 +71,7 @@ body {
   box-sizing: border-box;
 
   color: #fff;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .1);
+  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
   font-family: 'Open Sans', Arial, sans-serif;
   font-size: 30px;
   letter-spacing: -1px;
@@ -87,7 +86,9 @@ body {
   opacity: 0.3;
   transition: opacity 1s;
 }
-.impress-enabled .step.active { opacity: 1 }
+.impress-enabled .step.active {
+  opacity: 1;
+}
 
 .notes {
   display: none;
@@ -116,7 +117,7 @@ pre > code {
 
 /* Inline code, no Highlight.js */
 code {
-  font-family: "Cutive mono","Courier New", monospace;
+  font-family: 'Cutive mono', 'Courier New', monospace;
 }
 
 a {
@@ -140,18 +141,18 @@ blockquote {
 }
 
 em {
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .3);
+  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.3);
 }
 
 strong {
-  text-shadow: -1px 1px 2px rgba(100,100,100,0.5);
+  text-shadow: -1px 1px 2px rgba(100, 100, 100, 0.5);
 }
 
 q {
   font-family: 'PT Serif';
   font-style: italic;
   font-weight: 400;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .3);
+  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.3);
 }
 
 strike {
@@ -170,9 +171,15 @@ strike {
   width: 90%;
   text-align: center;
 }
-.title h1 { top: 50px; }
-.title h2 { top: 400px; }
-.title h3 { top: 500px; }
+.title h1 {
+  top: 50px;
+}
+.title h2 {
+  top: 400px;
+}
+.title h3 {
+  top: 500px;
+}
 
 .title img {
   display: block;
@@ -180,8 +187,6 @@ strike {
   width: 50%;
   margin-top: 140px; /* tuned just for featurette image */
 }
-
-
 
 /***** Plugins ******/
 .impress-enabled div#impress-toolbar {
@@ -202,7 +207,7 @@ body.impress-mouse-timeout {
 /* Help popup plugin */
 .impress-enabled #impress-help {
   background: none repeat scroll 0 0 rgba(0, 0, 0, 0.5);
-  color: #EEEEEE;
+  color: #eeeeee;
   font-size: 80%;
   position: fixed;
   left: 2em;
@@ -219,11 +224,15 @@ body.impress-mouse-timeout {
   padding-right: 1em;
 }
 
-
-
 /*
    Disable mouse clicks / focus for body
 */
-.impress-enabled              { pointer-events: none }
-.impress-enabled #impress         { pointer-events: auto }
-.impress-enabled #impress-toolbar     { pointer-events: auto }
+.impress-enabled {
+  pointer-events: none;
+}
+.impress-enabled #impress {
+  pointer-events: auto;
+}
+.impress-enabled #impress-toolbar {
+  pointer-events: auto;
+}
