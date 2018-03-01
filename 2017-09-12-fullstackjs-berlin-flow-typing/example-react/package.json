@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "create-react-app": "^1.4.0"
+  },
+  "dependencies": {
+    "flow": "^0.2.3"
+  }
+}

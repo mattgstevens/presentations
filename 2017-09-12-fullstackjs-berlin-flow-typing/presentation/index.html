@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>On using Flow | @mattgstevens</title>
+
+    <meta name="description" content="A presentation on using Flow, given on 2017-09-12 at FullStackJS Berlin" />
+    <meta name="author" content="Matthew Stevens" />
+
+    <!-- Extra styling modules for impress -->
+    <link rel="stylesheet" href="/css/highlight-monokai.css">
+    <link href="/css/markdown-slides.css" rel="stylesheet" />
+
+</head>
+
+<body class="impress-not-supported">
+<div class="fallback-message">
+    <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+    <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+</div>
+
+<div id="impress" data-transition-duration="1000">
+
+<div id="title-slide" class="step title markdown">
+# On using Flow
+## A Static type checker for JavaScript
+### Matthew Stevens
+![flow-featurette-bigger-gif](images/featurette-bigger.gif)
+</div>
+
+<div id="slide-set" class="step markdown" data-rel-x="0" data-rel-y="900">
+# Preramble
+
+- how many people use Flow?
+  - like to use?
+- how many people use typescript?
+  - like to use?
+
+-----
+
+# Preramble
+
+- how many people use purescript?
+  - like to use?
+
+-----
+
+## What is Flow
+
+- Project is developed at Facebook and [open sourced in 2014](https://code.facebook.com/posts/1505962329687926/flow-a-new-static-type-checker-for-javascript)
+- "... a new open-source static type checker for JavaScript. Flow adds static typing to JavaScript to improve developer productivity and code quality."
+
+-----
+
+## What is static typing?
+[wikipedia entry](https://en.wikipedia.org/wiki/Type_system#Static_type_checking)
+
+"Static type checking is the process of verifying the type safety of a program based on analysis of a program's text (source code). If a program passes a static type checker, then the program is guaranteed to satisfy some set of type safety properties for all possible inputs."
+
+    const doubleIt = (x) => x * 2
+
+    doubleIt(10) // => 20 OK
+    doubleIt('10') // => 20 Type coercion
+    doubleIt(['10']) // => 20 O RLY?
+
+-----
+
+## What is static typing?
+[wikipedia entry](https://en.wikipedia.org/wiki/Type_system#Static_type_checking)
+
+"Without static type checking, even code coverage tests with 100% coverage may be unable to find such type errors. The tests may fail to detect such type errors, because the combination of all places where values are created and all places where a certain value is used must be taken into account."
+
+-----
+
+## Why do we want static typing?
+In a statically typed language:
+
+- function inputs and output have a type
+- variables have a type
+- a type checker can catch certain errors at analysis time based on these types
+
+-----
+
+## Why do we want static typing?
+
+    const greeter = (user) => `Hello ${user}`
+
+    const sadUser = { name: 'Mr. Nope' }
+    greeter(sadUser)
+      // => "Hello [object Object]"
+
+-----
+
+## Why do we want static typing?
+
+    // @flow
+    const greeter = (user: string): string =>
+      `Hello ${user}`
+
+    const sadUser: User = { name: 'Mr. Nope' }
+    // $ExpectError
+    greeter(sadUser)
+
+-----
+
+## Why do we want static typing?
+
+    // @flow
+    const greeter = (user: string): string =>
+      `Hello ${user}`
+
+    const happyUser: User = { name: 'Ms. Yea' }
+    greeter(happyUser.name)
+
+-----
+
+## Why do we want static typing?
+
+* we are always putting values into containers called variables
+* statically typed variables give us a container with a type annotation along with the value
+* dynamically typed variables are containers that have a value and no other properties
+
+-----
+
+## JavaScript is a dynamically typed language
+
+- function inputs and output as well as variables have NO type annotations
+- type errors can only be found by the interpreter at runtime, when an expression is being evaluated
+
+-----
+
+## Javascript is a weakly typed language
+[it coerces types leading to some "wat" moments]((https://www.destroyallsoftware.com/talks/wat))
+
+    console.log({} + {}) // ?
+
+-----
+
+## Javascript is a weakly typed language
+[it coerces types leading to some "wat" moments]((https://www.destroyallsoftware.com/talks/wat))
+
+    console.log([] + []) // => ''
+    console.log({} + []) // ?
+
+-----
+
+## Javascript is a weakly typed language
+[it coerces types leading to some "wat" moments]((https://www.destroyallsoftware.com/talks/wat))
+
+    console.log([] + []) // => ''
+    console.log({} + []) // => 0
+    console.log([] + {}) // ?
+
+-----
+
+## Javascript is a weakly typed language
+[it coerces types leading to some "wat" moments]((https://www.destroyallsoftware.com/talks/wat))
+
+    console.log([] + []) // => ''
+    console.log({} + []) // => 0
+    console.log([] + {}) // => [object Object]
+    console.log({} + 2) // ?
+
+-----
+
+## Javascript is a weakly typed language
+[it coerces types leading to some "wat" moments]((https://www.destroyallsoftware.com/talks/wat))
+
+    console.log([] + []) // => ''
+    console.log({} + []) // => 0
+    console.log([] + {}) // => [object Object]
+    console.log({} + 2) // => [object Object]2
+    console.log('hello' + 1) ?
+
+-----
+
+## Javascript is a weakly typed language
+[it coerces types leading to some "wat" moments]((https://www.destroyallsoftware.com/talks/wat))
+
+    console.log([] + []) // => ''
+    console.log({} + []) // => 0
+    console.log([] + {}) // => [object Object]
+    console.log({} + 2) // => [object Object]2
+    console.log('hello' + 1) // => hello1
+    console.log('hello' - 1) // ?
+
+-----
+
+## Javascript is a weakly typed language
+[it coerces types leading to some "wat" moments]((https://www.destroyallsoftware.com/talks/wat))
+
+    console.log([] + []) // => ''
+    console.log({} + []) // => 0
+    console.log([] + {}) // => [object Object]
+    console.log({} + 2) // => [object Object]2
+    console.log('hello' + 1) // => hello1
+    console.log('hello' - 1) // NaN
+
+-----
+
+## The Internet is awesome
+
+- deploying clients on the web is great: no App Store, as many subdomains as you want, fast update cycles, and CDNs for when things don't change often
+- and it powered by Javascript: large and maturing ecosystem of libraries and tooling
+
+-----
+
+## Why to use Flow
+- we are writing software professionaly and JavaScript alone does not give enough confidence to ship software
+- tools like eslint provide some safety guarantees, as well as code quality aspects (no-unused-vars, no-shadow names, prefer-const)
+- tools like prettier automate formatting for style choices
+
+-----
+
+## Why to use Flow
+
+- working in a project requires a high level of awareness (even green field projects become featureful)
+- collaborators on projects come and go (on vacation, having children, go to other projects)
+- takes pressure off code review so things like ethos of the project and design choices can be more visible
+
+-----
+
+## Why to use Flow
+
+- adding a tool that allows automated type checking while not forcing us to dramatically change the libraries or code style that we already like to use
+
+-----
+
+## Primitive Types
+
+- `boolean` => true
+- `number` => 42, NaN, Infinity
+- `string` => "probably unicode support 🎉"
+- `null`
+- `void` (better known as `undefined`)
+
+-----
+
+## Some examples ...
+
+-----
+
+## Some mad Science with Flow types
+
+- [The Eff Monad](https://medium.com/@gcanti/the-eff-monad-implemented-in-flow-40803670c3eb)
+- [Refinements with Flow](https://medium.com/@gcanti/refinements-with-flow-9c7eeae8478b)
+- [Higher-kinded-types](https://medium.com/@gcanti/higher-kinded-types-in-flow-275b657992b7)
+
+-----
+## Documents that will help you Flow more better
+
+- [Flow docs](https://flow.org/en/docs/)
+- [Flow type cheatsheet](https://www.saltycrane.com/flow-type-cheat-sheet/latest/)
+</div>
+
+<div id="overview" class="step title markdown" data-x="5000" data-y="4000" data-scale="10" style="pointer-events: none;" data-rotate="5">
+# Thank you
+
+## @mattgstevens
+### twitter / github / other fine places online
+</div>
+
+</div>
+
+<!-- <div id="impress-toolbar"></div> -->
+<!-- <div id="impress-help"></div> -->
+
+
+<!-- Extra modules for impress -->
+<script type="text/javascript" src="/js/highlight.pack.js"></script>
+<script type="text/javascript" src="/js/markdown.js"></script>
+
+<!-- impress -->
+<script type="text/javascript" src="/js/impress.js"></script>
+<script>
+  impress().init();
+</script>
+</body>
+</html>

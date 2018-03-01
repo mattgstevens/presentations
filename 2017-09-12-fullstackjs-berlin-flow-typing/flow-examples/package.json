@@ -1,0 +1,20 @@
+{
+  "name": "20170912-fullstackjs-berlin-flow-typing",
+  "version": "1.0.0",
+  "description": "Presentation given at Fullstack.js Berlin on 2017-09-12 by @mattgstevens",
+  "main": "index.js",
+  "repository": "https://github.com/mattgstevens/20170912-fullstackjs-berlin-flow-typing",
+  "author": "mattgstevens",
+  "license": "MIT",
+  "scripts": {
+    "build:comment": "this tool is faster than using the babel plugin, and is useful when you do not need babel / want to remove flowtypes directly as a step for: browserify / rollup /webpack",
+    "build": "flow-remove-types --pretty src/ --out-dir build/",
+    "repl:comment": "open a repl that is flow type aware",
+    "repl": "flow-node"
+  },
+  "devDependencies": {
+    "flow-bin": "^0.54.1",
+    "flow-remove-types": "^1.2.1",
+    "prettier": "^1.6.1"
+  }
+}

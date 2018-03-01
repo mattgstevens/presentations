@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <!--<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">-->
+  <!--<meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+  <!--This one seems to work all the time, but really small on ipad-->
+  <!--<meta name="viewport" content="initial-scale=0.4">-->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" media="all" href="theme/css/default.css">
+  <link rel="stylesheet" media="only screen and (max-device-width: 480px)" href="theme/css/phone.css">
+  <base target="_blank"> <!-- This amazingness opens all links in a new tab. -->
+  <script data-main="js/slides" src="js/require-1.0.8.min.js"></script>
+</head>
+<body style="opacity: 0">
+
+<slides class="layout-widescreen">
+
+  <slide class="logoslide nobackground">
+    <article class="flexbox vcenter">
+      <span><img src="images/ClearFit_mini_logo.jpg"></span>
+    </article>
+  </slide>
+
+  <slide class="title-slide segue nobackground">
+    <aside class="gdbar"><img src="images/ruby_logo.png"></aside>
+    <!-- The content of this hgroup is replaced programmatically through the slide_config.json. -->
+    <hgroup class="auto-fadein">
+      <h1 data-config-title><!-- populated from slide_config.json --></h1>
+      <h2 data-config-subtitle><!-- populated from slide_config.json --></h2>
+      <p data-config-presenter><!-- populated from slide_config.json --></p>
+    </hgroup>
+  </slide>
+
+  <slide class="segue dark quote nobackground">
+    <article class="flexbox vleft auto-fadein">
+      <q>
+        I am always doing that which I can not do, in order that I may learn how to do it.
+      </q>
+      <div class="author">
+        Pablo Picasso
+      </div>
+    </article>
+  </slide>
+
+  <slide>
+    <hgroup>
+      <h2>What are we looking at?</h2>
+    </hgroup>
+    <article>
+      <ul>
+        <li>Objects</li>
+        <li>Arrays</li>
+        <li>Strings</li>
+        <li>Hashes</li>
+        <li>Classes</li>
+      </ul>
+    </article>
+  </slide>
+
+  <slide>
+    <hgroup>
+      <h2>Objects</h2>
+    </hgroup>
+    <article>
+      <p>Everything in Ruby is an object</p>
+      <pre class="prettyprint" data-lang="ruby">
+        1.is_a?(Object)       # true
+        Array.is_a?(Object)   # true
+        Object.is_a?(Object)  # true
+      </pre>
+    </article>
+  </slide>
+
+  <slide>
+    <hgroup>
+      <h2>Objects</h2>
+    </hgroup>
+    <article>
+      <p>Specialized functions for various types of data</p>
+    </article>
+  </slide>
+
+  <slide>
+    <hgroup>
+      <h2>Array</h2>
+    </hgroup>
+    <article>
+      <p>Used to store a list of things</p>
+      <pre class="prettyprint" data-lang="ruby">
+        a = Array.new         # []
+        a.push(1)             # [1]
+        a.unshift('a')        # ['a',1]
+        a.insert(1, "index")  # ['a', 'index', 1]
+      </pre>
+    </article>
+  </slide>
+
+  <slide>
+    <hgroup>
+      <h2>Array</h2>
+    </hgroup>
+    <article>
+      <p>Useful when the order is important (queue)</p>
+      <pre class="prettyprint" data-lang="ruby">
+        a = [1,2,3,4]
+        a.length  # 4
+        a.pop     # 1
+        a.length  # 3
+        a.pop     # 2
+        ...
+      </pre>
+    </article>
+  </slide>
+
+  <slide>
+    <hgroup>
+      <h2>Array</h2>
+    </hgroup>
+    <article>
+      <p>Can be treated as a set</p>
+      <pre class="prettyprint" data-lang="ruby">
+        a = [9,3,4,1,2,3,4]
+        a.uniq!   # [9,3,4,1,2]
+        a.sort!   # [1,2,3,4,9]
+      </pre>
+    </article>
+  </slide>
+
+  <slide>
+    <hgroup>
+      <h2>String</h2>
+    </hgroup>
+    <article>
+      <p>Used to store characters</p>
+      <pre class="prettyprint" data-lang="ruby">
+        a = "hello"   # "hello"
+        a += " "      # "hello "
+        a << "world"  # "hello world"
+        a.concat(33)  # "hello world!"
+      </pre>
+    </article>
+  </slide>
+
+  <slide>
+    <hgroup>
+      <h2>String</h2>
+    </hgroup>
+    <article>
+      <p>They are really an array of characters</p>
+      <pre class="prettyprint" data-lang="ruby">
+        a = "abcd"
+        a[0..2]   # "abc"
+      </pre>
+    </article>
+  </slide>
+
+  <slide>
+    <hgroup>
+      <h2>String</h2>
+    </hgroup>
+    <article>
+      <p>Nice functions to format text</p>
+      <pre class="prettyprint" data-lang="ruby">
+        a = "Aloha"
+        a.downcase    # "aloha"
+        a.upcase      # "ALOHA"
+        a.capitalize  # "Aloha"
+      </pre>
+    </article>
+  </slide>
+
+  <slide>
+    <hgroup>
+      <h2>Hash</h2>
+    </hgroup>
+    <article>
+      <p>Used as a key / value store</p>
+      <pre class="prettyprint" data-lang="ruby">
+        a = Hash.new    # {}
+        a[1] = "one"    # { 1 => "one" }
+        a["two"] = 2    # { 1 => "one", "two" => 2 }
+
+        a.keys          # [1, "two"]
+        a.values        # ["one", 2]
+      </pre>
+    </article>
+  </slide>
+
+  <slide>
+    <hgroup>
+      <h2>Hash</h2>
+    </hgroup>
+    <article>
+      <p>Useful when you want to perform a lookup</p>
+      <pre class="prettyprint" data-lang="ruby">
+        lookup = { "matt": "647-123-4444" }
+        lookup[:matt]   # "647-123-4444"
+
+        lookup.fetch(:ben, "No number found")
+      </pre>
+    </article>
+  </slide>
+
+  <slide>
+    <hgroup>
+      <h2>Classes</h2>
+    </hgroup>
+    <article>
+      <p>A way of making your own objects</p>
+      <p>Grouping functions by purpose / category</p>
+      <pre class="prettyprint" data-lang="ruby">
+        class ClearFit
+          def self.pitch
+            "Find the right jobs for people"
+          end
+        end
+
+        ClearFit.pitch
+      </pre>
+    </article>
+  </slide>
+
+  <slide class="segue dark quote nobackground">
+    <article class="flexbox vleft auto-fadein">
+      <q>
+        Knowing is not enough, you must apply; willing is not enough, you must do.
+      </q>
+      <div class="author">
+        Bruce Lee
+      </div>
+    </article>
+  </slide>
+
+  <slide class="thank-you-slide segue nobackground">
+    <aside class="gdbar right"><img src="images/matt_logo.png"></aside>
+    <article class="flexbox vleft auto-fadein">
+      <h2>&lt; Thank You! &gt;</h2>
+    </article>
+    <p class="auto-fadein" data-config-contact>
+      <!-- populated from slide_config.json -->
+    </p>
+  </slide>
+
+  <slide class="logoslide nobackground">
+    <article class="flexbox vcenter">
+      <span><img src="images/ClearFit_mini_logo.jpg"></span>
+    </article>
+  </slide>
+
+  <slide class="backdrop"></slide>
+
+</slides>
+
+<!--[if IE]>
+  <script src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js"></script>
+  <script>CFInstall.check({mode: 'overlay'});</script>
+<![endif]-->
+</body>
+</html>
