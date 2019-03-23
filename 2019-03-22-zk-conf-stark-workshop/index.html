@@ -1,0 +1,1458 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>STARKs pipeline</title>
+
+  <meta name="description" content="A presentation on STARK pipeline, given on 2018-03-22 at Zero Knowledge Summit 3" />
+  <meta name="author" content="Matthew Stevens" />
+
+  <!-- Extra styling modules for impress -->
+  <link rel="stylesheet" href="./css/highlight-monokai.css">
+  <link href="./css/markdown-slides.css" rel="stylesheet" />
+
+</head>
+
+<body class="impress-not-supported">
+<div class="fallback-message">
+  <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+  <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+</div>
+
+<!-- NOTE: no indentation so markdown formatting doesn't pick up the left hand side whitespaces -->
+<div id="impress" data-transition-duration="600">
+
+<div id="good-afternoon" class="step title markdown" data-x="0" data-y="0">
+# Building a STARK with pen and paper
+
+### We will go through a full STARK-ification of a bounded Fibonnaci sequence. We will see how far we can get with pen and paper.
+
+-----
+![intro-pic](images/intro-pic.jpeg)
+</div>
+<div id="intro" class="step markdown" data-rel-x="0" data-rel-y="1500" data-rel-z="900">
+## Good afternoon
+---
+### Matthew Stevens :: Software Engineer
+
+#### Things I enjoy:
+
+* blockchains
+* the internet (and other open protocols)
+* chai tea
+
+-----
+## Good afternoon
+---
+### Mirco Richter :: Mathematician
+
+#### Things I enjoy:
+
+* blockchains
+* the internet (and other open protocols)
+* red bull
+
+-----
+## Good afternoon
+---
+### Purpose of this workshop
+
+To go through the STARK protocol, so that later when reading the paper more of it is approachable.
+
+Additionally there is an accompanying paper that works out all the intermediate steps.
+
+-----
+## What is verified computation
+---
+### Properties
+
+Prove that  computation is correct without having to recompute it.
+
+- Completeness: an honest prover should be able to convince the verifier
+- Soundness: a dishonest prover should not, with a high probability, be able to convince the verifier
+
+As an extension
+
+- Zero-Knowledge: the verifier learns nothing about any auxilary (secret) inputs the prover used to create the proof
+
+-----
+## What is a ZK-STARK
+---
+### Core attributes
+
+- ZK: zero knowledge; private inputs are shielded
+- Scalable: generating a proof of computation lasting T cycles
+  * proof generated in roughly T cycles (quasi-linear T)
+  * verified exponentially faster than T (roughly `log(T)` cycles)
+    * log is important (`log(10^6) = 13`, `log(10^9) = 20`)
+- Transparent: verifiers messages are only public random coins (interactive) OR use of a collision resistant hash function (non-interactive)
+  * no trusted setup
+- ARgument of Knowledge: proof can be generated only by party knowing private data
+
+-----
+## What is a ZK-STARK
+---
+### Asymptotic Complexity
+
+**Prover time**
+
+`\mathcal{O}(N\cdot log(N))`
+
+**Proof size**
+
+`\mathcal{O}(N\cdot log^2(N))`
+
+**Round complexity**
+
+`\mathcal{O}(log(N))`
+
+-----
+## What is a ZK-STARK
+---
+### Compared to ZK-SNARK
+
+##### STARK
+
+- can work over any algebraic domain
+- binary fields, or prime fields (any Galois field)
+- post-quantum secure (relies on information theoretic assumptions only)
+
+##### SNARK & Bulletproof
+
+- based on number theoretic assumptions
+- you must work in a specific prime field, with elliptic curve pairing
+- elliptic curve math is vunerable to quantum algorithms solving the discrete logarithm problem
+
+-----
+## What is a ZK-STARK
+---
+### Virtues of Transparency
+
+- eliminates single point of failure as there is no trusted setup
+- allows for continuous deployment of minor upgrades, since no ceremony is required to upgrade
+
+-----
+## What we will do today
+---
+### Overview of STARK protocol pipeline
+![pipeline-overview](images/pipeline-overview.svg)
+
+- pen and paper
+- use online Galois (finite field) calculator
+
+https://bit.ly/2Cn5IpE
+
+
+-----
+## Math warmup
+---
+### Polynomials - Degree
+
+Polynomials are a formal sum of exponents, with coefficient from the chosen field.
+
+The degree is the maximal non-zero term
+
+- `5x + 1`, is degree 1
+  * coefficient is 5 and 1
+- `x^2 + 3x + 7`, is degree 2
+  * coefficients are 1, 3, and 7
+
+-----
+## Math warmup
+---
+### Polynomials - Lookup Tables
+
+- polynomials are like a program where you plug in `x` and get out some value `v`
+- can have lookup tables of precomputed values for such a function
+- function is degree `d`, if it is an evaluation of a polynomial with degree `d`
+
+-----
+## Math warmup
+---
+### Binary fields - `\mathbb{F}_{2^{16}}`
+
+All the arithmetic we will do for our STARK example happens in a finite field.
+
+We need a large enough finite field to work in, and computing a lookup table for `2^{16}` is not so fun, nor is doing all the multiplication by hand.
+
+This is also called a characteristic 2 finite field, with 65536 elements (`2^{16} = 65536`).
+
+Pen and paper.. and one digital tool.
+Calculator: https://bit.ly/2Cn5IpE
+
+-----
+## Math warmup
+---
+### Binary fields - `\mathbb{F}_{2^{16}}`
+
+**Attention:**
+
+If you are familiar with computations in a prime field `\mathbb{F}_{q}` for a prime number `q`, keep in mind that computations in `\mathbb{F}_{2^{n}}` are different and NOT derived from ordinary integer computation "modulo `2^{n}`".
+
+-----
+## Math warmup
+---
+### Binary fields - Generator in `\mathbb{F}_{2^{16}}`
+
+We assume a generator `t` in `\mathbb{F}_{2^{16}}` so that we can write any element `x \in \mathbb{F}_{2^{16}}` with coefficients `\lambda_0,...,\lambda_{15} \in \{0,1\}`
+
+#### `x = \lambda_{15}t^{15} + \lambda_{14}t^{14} + ... + \lambda_{1}t^{1} + \lambda_{0}`
+
+As a consequence elements `x \in \mathbb{F}_{2^{16}}` can be represented as 16-bit binary strings `x = \langle\lambda_0,...,\lambda_{15}\rangle` or as a number between 0 and 65536.
+
+We have chosen the monomial of degree one as our generator for this example, and call it `t`
+
+A generator is an element that can generate all other elements of the group by multiplication with itself. ie. `t^{257} = 256`
+
+-----
+## Math warmup
+---
+### Binary fields - Addition in `\mathbb{F}_{2^{16}}`
+
+Calculator: https://bit.ly/2Cn5IpE
+
+- `0 + 1 = 1`
+- `1 + 1 = 0`
+- `3 + 5 =\ ?`
+
+-----
+## Math warmup
+---
+### Binary fields - Addition in `\mathbb{F}_{2^{16}}`
+
+Calculator: https://bit.ly/2Cn5IpE
+
+#### `3 + 5 =\ ?`
+
+Transform into binary string, and XOR
+
+```
+\langle0000000000000011\rangle\\
+\langle0000000000000101\rangle\ XOR\\
+\rule{4cm}{0.4pt}\\
+\langle0000000000000???\rangle\ =
+```
+
+-----
+## Math warmup
+---
+### Binary fields - Addition in `\mathbb{F}_{2^{16}}`
+
+Calculator: https://bit.ly/2Cn5IpE
+
+#### `3 + 5 =\ 6`
+
+Transform into binary string, and XOR
+
+```
+\langle0000000000000011\rangle\\
+\langle0000000000000101\rangle\ XOR\\
+\rule{4cm}{0.4pt}\\
+\langle0000000000000110\rangle\ =
+```
+
+-----
+## Math warmup
+---
+### Binary fields - Multiplication in `\mathbb{F}_{2^{16}}`
+
+Calculator: https://bit.ly/2Cn5IpE
+
+- `0 * 1 = 0`
+- `3 * 5 = 15`
+- `3 * 6 =\ ?`
+
+-----
+## Math warmup
+---
+### Binary fields - Multiplication in `\mathbb{F}_{2^{16}}`
+
+Calculator: https://bit.ly/2Cn5IpE
+
+#### `3 * 6 =\ ?`
+
+You can do this by hand, but for our workshop lets stick to the online calculator.
+
+See the accompanying paper if you are interested to learn this.
+
+-----
+## Math warmup
+---
+### Binary fields - Multiplication in `\mathbb{F}_{2^{16}}`
+
+Calculator: https://bit.ly/2Cn5IpE
+
+#### `3 * 6 =\ 10`
+
+-----
+## Math warmup
+---
+### Math has been warmed
+
+Calculator: https://bit.ly/2Cn5IpE
+
+We will introduce Reed-Solomon codes before the APR step, but for now this is all we need!
+
+-----
+## Notation used
+---
+
+`x` is used exclusively for elements of our Galois field `\mathbb{F}_{2^{16}}`
+
+`t` is a constant for the STARK protocol; when used in computations it is a polynomial in `\mathbb{F}_{2}[t]`
+
+</div>
+<div id="nexte-1" class="katex-center step markdown">
+## STARK example for Fibonnaci
+---
+### Definition of Fibonnaci sequence
+
+Lets compute some values of the Fibonnaci sequence starting with {0, 1}.
+
+We compute the n-th number in the sequence like: `F_n = F_{n-1} + F_{n-2}`
+
+```
+\begin{bmatrix}
+F_0 & | & 0\\
+F_1 & | & 1\\
+F_2 & | & 1\\
+F_3 & | & 2\\
+\end{bmatrix}
+```
+
+-----
+## STARK example for Fibonnaci
+---
+### Definition of Fibonnaci sequence
+
+However the term “number” here does not mean an ordinary number like an integer, but an element from our finite field.
+
+```
+\begin{bmatrix}
+F_0 & | & 0\\
+F_1 & | & 1\\
+F_2 & | & 1\\
+F_3 & | & 0\\
+\end{bmatrix}
+```
+
+-----
+## STARK example for Fibonnaci
+---
+### Definition of Fibonnaci sequence
+
+To better represent that, remember that we can write the 16 digit binary string as a reminder that we are using elements in a finite field.
+
+```
+\begin{bmatrix}
+F_0 & | & \langle0000000000000000\rangle\\
+F_1 & | & \langle0000000000000001\rangle\\
+F_2 & | & \langle0000000000000001\rangle\\
+F_3 & | & \langle0000000000000000\rangle\\
+\end{bmatrix}
+```
+</div>
+<div id="nexte-2" class="step markdown">
+## STARK protocol
+---
+### What are we doing
+
+![pipeline-overview](images/pipeline-overview.svg)
+
+We are essentially a compiler, where each step is performing some transformation from one represensation to another, until the final step is "FRI friendly" as this is the final step.
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+![pipeline-overview](images/pipeline-AIR.svg)
+
+- show our computation as an execution trace, with algebraic registers
+- create polynomial contraints
+- define the instance and witness as a BAIR
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+First step is to write our computation as an "algebraic execution trace" of the program running for `T` steps.
+
+This is represented by a `w \times T` array in which each entry is an element of a finite field.
+
+Each row describes the state of the computation at a certain step in time `T`, and a single column tracks a "register" over each time step.
+</div>
+<div id="nexte-3" class="katex-center step markdown">
+## Algebraic Intermediate Representation (AIR)
+---
+### Variables
+
+Our Fibonacci sequence has two registers, and it can run a maximum of 3 steps.
+
+* T is an integer representing a bound on running time
+* w is an integer representing state width
+
+`T = 3`
+`w = 2`
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+### Execution Trace
+
+For our example, when given the inputs
+`(\langle1001011011101110\rangle, \langle1111010010101011\rangle)`
+
+a correct algebraic execution trace of our computation looks like:
+
+```
+\begin{bmatrix}
+\langle1001011011101110\rangle & | & \langle1111010010101011\rangle\\
+\langle1111010010101011\rangle & | & \langle0110001001000101\rangle\\
+\langle0110001001000101\rangle & | & \langle1001011011101110\rangle
+\end{bmatrix}
+```
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+### Execution Trace - fraudulent
+
+To give an example of an incorrect execution trace we consider the same input
+values `(\langle1001011011101110\rangle, \langle1111010010101011\rangle)`
+and cheat by writing the execution trace as:
+
+```
+\begin{bmatrix}
+\langle1001011011101110\rangle & | & \langle1111010010101011\rangle\\
+\langle1111111100000000\rangle & | & \langle0000000011111111\rangle\\
+\langle1010101010101010\rangle & | & \langle0101010101010101\rangle
+\end{bmatrix}
+```
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+### Monotone Boolean Circuit C
+
+The reason monotone circuits are used, as opposed to general circuit which are more expressive is that adding negation gates to the boolean circuit may:
+
+- destroy perfect completeness
+- reduce efficiency
+- or require more rounds of interaction (depending on the way negation gates are arithmetized)
+
+This means you can only use AND / OR gates to build the circuit.
+
+------
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+### Definition of the AIR instance
+
+In the following we will compute the required parts (P, B)
+  * we did not need the C for this example, so did not build the circuit
+`\mathbb{X} = (\mathbb{F_{2^{16}}}, 3, 2, \mathcal{P}, C, B)`
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+### Constraint Checking Polynomials
+
+Now that we have our algebraic execution trace, we can derive the BAIR representation of our example.
+
+To do this we first have to represent our computation as a set of polynomials `P(x_1, x_2, y_1, y_2)`.
+
+We will use the register `x_i` for registers in the current time step, and `y_i` for registers in the next step.
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+### Constraint Checking Polynomials (inputs)
+
+`P_1(x_{r_1}, x_{r_2}, y_{r_1}, y_{r_2}) = x_{r_1} - a`
+
+(Register one begins with the value from input "a")
+
+`P_2(x_{r_1}, x_{r_2}, y_{r_1}, y_{r_2}) = x_{r_2} - b`
+
+(Register two begins with the value from input "b")
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+### Constraint Checking Polynomials (computation)
+
+`P_3(x_{r_1}, x_{r_2}, y_{r_1}, y_{r_2}) = y_{r_2} - (x_{r_1} + x_{r_2})`
+
+(In each step, register two is the sum from registers one and two from previous step)
+
+`P_4(x_{r_1}, x_{r_2}, y_{r_1}, y_{r_2}) = y_{r_1} - x_{r_2}`
+
+(In each step, register two is moved into register one of the next step)
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+### Constraint Checking Polynomials
+
+- the higher degree the polynomial constraints are, the larger proof size will be and the longer it takes to generate
+- we are the best case here having linear contraints (degree one)
+
+Altogether the set of polynomials `\mathcal{P}=\{P_{1},P_{2},P_{3},P_{4}\}`
+represents the computational integrity statement.
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+### Constraint Checking Polynomials
+
+`\mathcal{P}=\begin{Bmatrix}\\
+P_1(x_{r_1}, x_{r_2}, y_{r_1}, y_{r_2}) = x_{r_1} - a\\
+P_2(x_{r_1}, x_{r_2}, y_{r_1}, y_{r_2}) = x_{r_2} - b\\
+P_3(x_{r_1}, x_{r_2}, y_{r_1}, y_{r_2}) = y_{r_2} - (x_{r_1} + x_{r_2})\\
+P_4(x_{r_1}, x_{r_2}, y_{r_1}, y_{r_2}) = y_{r_1} - x_{r_2}\\
+\end{Bmatrix}`
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+### Boundary Constraints
+
+The set of boundary constraints B represents the algebraic execution trace, where each boundary constraint is a tuple.
+`(i, j, \alpha)`
+
+#### for
+
+`i\in\ [T]`
+`j\in\ [w]`
+`\alpha\ in\ \mathbb{F}_{2^{16}}`
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+### Boundary Constraints
+
+The set of boundary constraints is then:
+`B=\{(1,1,a),(1,2,b),(2,1,b),(2,2,a+b),(3,1,a+b),(3,2,a+b+b)\}`
+
+</div>
+<div id="nexte-4" class="step markdown">
+## Algebraic Intermediate Representation (AIR)
+---
+### Instance definition
+
+We call the instance `\mathbb{X}` a `(n,t,d)-BAIR`
+
+For us this means `(16,2,1)-BAIR`
+
+Where the instance is the tuple `\mathbb{X} = (\mathbb{F_{2^{16}}}, T, w, \mathcal{P}, C, B)`
+
+For us this means `\mathbb{X} = (\mathbb{F_{2^{16}}}, 3, 2, \mathcal{P}, C, B)`
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+### Instance definition
+
+We now have everything for our instance
+
+`\mathbb{X} = \begin{bmatrix} (\mathbb{F_{2^{16}}}, 3, 2, \mathcal{P}, C, B)\end{bmatrix}`
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+### Witness definition
+
+The witness is a set of functions `\mathbb{W} = \{w_1, ..., w_w\}: [T] \to \mathbb{F}`
+
+where the witness satisfies the instance `\mathbb{X}` exactly if:
+
+for all boundary constraints `(i, j, \alpha)` we have `w_j(i) = \alpha`
+
+for all `t \in [T-1]` we have
+#### `C(IsZeros(\mathcal{P}(w[t], w[t + 1]))) = TRUE`
+
+where `w[t] = (w_1(t),...,w_w(t))`
+
+and `IsZero : \mathbb{F}^k \to \{TRUE, FALSE\}^k` is the mapping that sends `0 \in \mathbb{F}` to TRUE and all non-zero elements to FALSE
+
+</div>
+<div id="nexte-5" class="katex-center step markdown">
+## Algebraic Intermediate Representation (AIR)
+---
+### Witness defintion
+
+In our example an execution trace is a witness exactly if
+
+```
+\mathbb{W}=\begin{bmatrix}
+a & | & b\\
+b & | & a+b\\
+a+b & | & a+b+b
+\end{bmatrix}
+```
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+### Witness defintion
+
+Our example from before:
+
+```
+\mathbb{W}_{right}=\begin{bmatrix}
+\langle1001011011101110\rangle & | & \langle1111010010101011\rangle\\
+\langle1111010010101011\rangle & | & \langle0110001001000101\rangle\\
+\langle0110001001000101\rangle & | & \langle1001011011101110\rangle
+\end{bmatrix}
+```
+
+This represents a correct witness, therefore `(\mathbb{X}, \mathbb{W}_{right}) \in L_{BAIR}` is a `(16,2,1)-BAIR`
+
+-----
+## Algebraic Intermediate Representation (AIR)
+---
+### Witness defintion - fraudulent
+
+Our incorrect example from before:
+
+```
+\mathbb{W}_{wrong}=\begin{bmatrix}
+\langle1001011011101110\rangle & | & \langle1111010010101011\rangle\\
+\langle1111010010101011\rangle & | & \langle0110001001000101\rangle\\
+\langle0110001001000101\rangle & | & \langle1001011011101110\rangle
+\end{bmatrix}
+```
+
+This is a fraud, therefore `(\mathbb{X}, \mathbb{W}_{wrong}) \not\in L_{BAIR}`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+![pipeline-overview](images/pipeline-APR.svg)
+
+The point of the APR is transform the AIR into functions that are Reed-Solomon codes if and only if the execution trace is a witness.
+
+This is done in a way most useful for the FRI protocol.
+
+</div>
+<div id="nexte-6" class="step markdown">
+## Algebraic Placement and Routing (APR)
+---
+
+The instance `\mathbb{X} = (\mathbb{F}, \mathcal{T}, \mathcal{N}, \Phi, \mathbb{L}, \mathbb{L}_{cmp}, (\rho_1, \rho_2), \rho_{cmp})`
+
+`\mathcal{T}=[w]`
+
+`=\{1,2\}`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Overview
+
+The purpose of the following it
+`W: L \to \mathbb{F}_{2^{16}}`
+
+W is a Reed-Solomon code (if the data we actually use is an actual BAIR-pair `(\mathbb{x}, \mathbb{w})`)
+
+L is the domain of W
+
+We being by computing L and some other affine subspaces in our finite field.
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Primitive Polynomial
+
+We start with the definition of the polynomial
+
+#### `\xi(t):= t^2 + t + 1`
+
+which is a primitive polynomial of degree 2.
+
+It is primitive as `\mathbb{F}_{2^{2}}` can be generated from `\xi`
+
+It is also an element of `\mathbb{F}_{2^{16}}` as the its degree is less than the field we are using (2 < 16).
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### `H \subset \mathbb{F}`
+
+This is the space `Span_{\mathbb{F}_2}(\{t^k | 0 <= k < t'\})`
+
+`H = \{\lambda_1t + \lambda_0 | \lambda_1, \lambda_0 \in \mathbb{F}_2\}`
+
+`H = \{\langle00000000000000\lambda_10\rangle + \langle000000000000000\lambda_0\rangle\}`
+
+```
+H = \begin{Bmatrix}
+\langle0000000000000000\rangle\\
+\langle0000000000000001\rangle\\
+\langle0000000000000010\rangle\\
+\langle0000000000000011\rangle
+\end{Bmatrix}
+```
+
+`H = \{0, 1, 2, 3\}`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### `H_0 \subset H`
+
+This is the subspace spanned by `\{t^k\ |\ 0 <= k < t'-1\}`
+
+`H_0 = \{\lambda_0 | \lambda_0 \in \mathbb{F}_2\}`
+
+`H_0 = \{\langle000000000000000\lambda_0\rangle\}`
+
+```
+H_0 = \begin{Bmatrix}
+\langle0000000000000000\rangle\\
+\langle0000000000000001\rangle\\
+\end{Bmatrix}
+```
+
+`H_0 = \{0, 1\}`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### `H_1 \subset H`
+
+This is the affine space `H_1 \triangleq H_0 + t^{t'-1}`
+
+```
+H_1 = \begin{Bmatrix}
+\langle0000000000000000\rangle\\
+\langle0000000000000001\rangle\\
+\end{Bmatrix}
++ \langle0000000000000010\rangle
+```
+
+```
+H_1 = \begin{Bmatrix}
+\langle0000000000000010\rangle\\
+\langle0000000000000011\rangle\\
+\end{Bmatrix}
+```
+
+`H_1 = \{2, 3\}`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Affine subspace `L` and `L_{cmp}`
+
+```
+L=Span_{\mathbb{F}_{2}}(\{t^{8}\cdot(1+t)\}\cup\{t^{0},...,t^{7}\})+t^{8} =\\
+\{\langle000000\lambda_{8}(1-\lambda_{8})\lambda_{7}\lambda_{6}\lambda_{5}\lambda_{4}\lambda_{3}\lambda_{2}\lambda_{1}\lambda_{0}\rangle|\lambda_{0},...,\lambda_{8}\in\{0,1\}\}
+```
+
+In particular we can see that, as a set, `L` contains `2^{9}=512`
+elements, as there are `9` free parameters in the definition, each
+from `\mathbb{F}_{2}`. This is important for the Reed Solomon codes.
+Written in base10 we see `L` as the set of numbers:
+`L=\{256,\ldots,767\}`
+
+```
+L_{cmp}=Span_{\mathbb{F}_{2}}(\{t^{0},...,t^{7}\})+t^{8} =\\
+\{\langle00000001\lambda_{7}\lambda_{6}\lambda_{5}\lambda_{4}\lambda_{3}\lambda_{2}\lambda_{1}\lambda_{0}\rangle|\lambda_{0},...,\lambda_{7}\in\{0,1\}\}
+```
+
+The set `L_{cmp}` contains `2^{8}=256` elements for the same reason. Written in base10 we get `L_{cmp}` as the set of numbers:
+`L_{cmp}=\{256,\ldots,511\}`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Polynomials `Z_{B,j}` and `\mathcal{E}_{B,j}`
+
+For every `j \in [w]` we define `Z_{B,j}, \mathcal{E}_{B,j} \in \mathbb{F}_{2^{16}}[x]`
+
+`Z_{B,j}(x) \triangleq\Pi_{(i,j,\alpha)}(x-t^{i}\%\xi(t))`
+
+`(i, j, \alpha) \in B, \mathcal{E}_{B,j}(t^i \% \xi(t)) = \alpha`
+
+Next we compute the Polynomials `Z_{B,j}` and `\mathcal{E}_{B,j}` for `j\in\{1,2\}`.
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Polynomials `Z_{B,j}`
+
+We do one example computation here, which can be done for the other `Z_{B,j}`
+
+##### `Z_{B,1}(x) =\Pi_{(i,1,\alpha)}(x-t^{i}\%\xi(t))`
+##### ` =\Pi_{(i,1,\alpha)}(x-t^{i}\%(t^{2}+t+1))`
+##### ` =(x-t)\cdot(x-(t+1))\cdot(x-1)`
+##### ` =(x+t)\cdot(x+t+1)\cdot(x+1)`
+##### ` =(x+2)\cdot(x+3)\cdot(x+1)`
+##### ` =(x^{2}+(2+3)x+6)\cdot(x+1)`
+##### ` =(x^{2}+x+6)\cdot(x+1)`
+##### ` =x^{3}+x^{2}+6x+x^{2}+x+6`
+##### ` =x^{3}+7x+6`
+
+By construction, this polynomial only has roots in `H`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Polynomials `Z_{B,j}`
+
+Since the definition does not depend on `j` the expression for is the same for both `Z_{B,1}` and `Z_{B,2}`
+
+`Z_{B,j} = x^{3}+7x+6`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Solving system of equations for register one
+
+`\mathcal{E}_{B,j}` is the polynomial of minimal degree such that for every
+
+#### `(i, j, \alpha) \in B, \mathcal{E}_{B,j}(t^i \% \xi(t)) = \alpha`
+
+For "tracking the first register"
+
+`\mathcal{E}_{B,1}(t^1\%(t^2 + t + 1)) = a`
+
+`\mathcal{E}_{B,1}(t^2\%(t^2 + t + 1)) = b`
+
+`\mathcal{E}_{B,1}(t^3\%(t^2 + t + 1)) = a + b`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Solving system of equations for register one
+
+In a similar process to computing the `Z(x)`'s we get
+
+`\mathcal{E}_{B,1}(\langle0000000000000010\rangle) = a`
+
+`\mathcal{E}_{B,1}(\langle0000000000000011\rangle) = b`
+
+`\mathcal{E}_{B,1}(\langle0000000000000001\rangle) = a + b`
+
+This is exactly the same as the first register of a correct execution trace.
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Solving system of equations for register one
+
+The polynomial of minimal degree that satisfies these three questions has degree 2, and is given by
+
+#### `\mathcal{E}_{B,j}(x) = b_2x^2 + b_1x + b_0`
+
+To determine the coefficient we get `x` from the previous equations and use it in the polynomial
+
+##### `\mathcal{E}_{B,1}(b_2\langle0000000000000010\rangle^2 + b_1\langle0000000000000010\rangle + b_0) = a`
+
+##### `\mathcal{E}_{B,1}(b_2\langle0000000000000011\rangle^2 + b_1\langle0000000000000011\rangle + b_0) = b`
+
+##### `\mathcal{E}_{B,1}(b_2\langle0000000000000001\rangle^2 + b_1\langle0000000000000001\rangle + b_0) = a + b`
+
+`=`
+
+##### `\mathcal{E}_{B,1}(b_2\langle0000000000000100\rangle + b_1\langle0000000000000010\rangle + b_0) = a`
+
+##### `\mathcal{E}_{B,1}(b_2\langle0000000000000101\rangle^2 + b_1\langle0000000000000011\rangle + b_0) = b`
+
+##### `\mathcal{E}_{B,1}(b_2\langle0000000000000001\rangle + b_1\langle0000000000000001\rangle + b_0) = a + b`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Solving system of equations for register one
+
+To easily read the coeffients, we can write with base 10 numbers
+
+##### `4b_2 + 2b_1 + b_0 = a`
+
+##### `5b_2 + 3b_1 + b_0 = b`
+
+##### `b_2 + b_1 + b_0 = a + b`
+
+Our goal now is to compute the `b'_j` terms, which we can do with Gaussian elimination. We will rewrite the system of equations as an augmented matrix:
+
+```
+\begin{matrix}
+4 & 2 & 1 & | & a\\
+5 & 3 & 1 & | & b\\
+4 & 2 & 1 & | & a + b\\
+\end{matrix}
+```
+
+</div>
+<div id="nexte-7" class="katex-center step markdown">
+## Algebraic Placement and Routing (APR)
+---
+#### Solving system of equations for register one
+
+```
+\begin{matrix}
+4 & 2 & 1 & | & a\\
+5 & 3 & 1 & | & b || +5I\\
+4 & 2 & 1 & | & a + b|| +4I\\
+\end{matrix}
+```
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Solving system of equations for register one
+
+```
+\begin{matrix}
+1 & 1 & 1 & | & a+b\\
+0 & 6 & 4 & | & 5a+4b & ||*30723\\
+0 & 6 & 5 & | & 5a+4b
+\end{matrix}
+```
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Solving system of equations for register one
+
+```
+\begin{matrix}
+1 & 1 & 1 & | & a+b & ||+II\\
+0 & 1 & 61447 & | & 34820a+61447b\\
+0 & 6 & 5 & | & 5a+4b & ||+6II
+\end{matrix}
+```
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Solving system of equations for register one
+
+```
+\begin{matrix}
+1 & 0 & 61446 & | & 34821a+61446b & ||+61446III\\
+0 & 1 & 61447 & | & 34820a+61447b & ||+61447III\\
+0 & 0 & 1 & | & 0
+\end{matrix}
+```
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Solving system of equations for register one
+
+```
+\begin{matrix}
+1 & 0 & 0 & | & 34821a+61446b\\
+0 & 1 & 0 & | & 34820a+61447b\\
+0 & 0 & 1 & | & 0
+\end{matrix}
+```
+
+So for register one we get
+
+`\mathcal{E}_{B,1}(x)=(34821a+61446b)x^{2}+(34820a+61447b)x`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Solving system of equations for register two
+
+For the second register we have a similar setup, except the right hand side has changed to
+
+```
+\begin{matrix}
+4 & 2 & 1 & | & b\\
+5 & 3 & 1 & | & a + b & ||+5I\\
+4 & 2 & 1 & | & a + b + b& ||+4I\\
+\end{matrix}
+```
+
+</div>
+<div id="nexte-8" class="step markdown">
+## Algebraic Placement and Routing (APR)
+---
+#### Solving system of equations for register two
+
+We solve the systems of equations for `\mathcal{E}_{B,2}` and up with
+
+#### `\mathcal{E}_{B,2}(x)=(61446a+30723b)x^{2}+(61447a+30723b)x`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### `\mathcal{N}`
+
+The set `\mathcal{N}` is used to generate an affine graph, where the directed graph with vertex set `\mathbb{F}` and edge set `\{(x, N(x))\ |\ x \in \mathbb{F}, N \in \mathcal{N}\}`
+
+The affine graph is added to the isntance description via its generating set `\mathcal{N}`. Each column of the algebraic execution trace (each register, tracked over time `T`) is a Reed Solomon codeword of rate `\rho` and the sequence of rates (one rate per register) is also part of the sintance description.
+
+###### `\mathcal{N}=\{(\tau,x),(\tau,tx),(\tau,tx+(t^2+t+1))\}`
+
+###### `=\{(1,x),(1,2x),(1,2x+7),(2,x),(2,2x),(2,2x+7)\}`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### `\Phi`
+
+The set `\Phi` captures both the boundary and transition constraints of the computation.
+
+```
+\Phi_{p}= \left\{ \begin{array}{c}
+\frac{x(x-1)}{Z_{H_{0}}(x)}\cdot P(\overline{(1,x)},\overline{(2,x)},\overline{(1,2x)},\overline{(2,2x)}),\\
+\frac{1}{Z_{H_{1}}(x)}\cdot P(\overline{(1,x)},\overline{(2,x)},\overline{(1,2x+7)},\overline{(2,2x+7)})
+\end{array}\right\}
+```
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### `\Phi`
+
+![phi-1](images/phi-1.png)
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### `\Phi`
+
+![phi-2](images/phi-2.png)
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### `\Phi`
+
+![phi-3](images/phi-3.png)
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### `\Phi`
+
+![phi-4](images/phi-4.png)
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Rate factor
+
+The rate factor determines the maximum degree of the Reed-Solomon codes
+
+`\rho_{1} =\frac{2^{k+t'}-deg(Z_{B,1})}{|L|}`
+`=\frac{2^{1+2}-3}{512}`
+`=\frac{5}{512}`
+
+Since the definition doesn't depend on the register, the rate factor is the same for all registers.
+`\rho_{2}    =\rho_{1}`
+
+`\rho_{cmp}    =\frac{1+2^{k+t'+d}}{|L_{cmp}|}`
+`=\frac{1+2^{4}}{256}`
+`=\frac{17}{256}`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Witness reduction
+
+Witness reduction works by transforming the AIR witness into somewhat random polynomials.
+`Q_{j}:\mathbb{F}_{2^{n}}\to\mathbb{F}_{2^{n}}`
+
+of degree `deg(Q_{j})<2^{k+t'}=2^{3}=8` such that
+
+#### `Q_{j}(g^{i}\%\xi)=w_{i,j}`
+ for all `i\in\{1,2,3\}`
+
+To incorporate some randomness into the system, we have to choose the degree of the `Q`’s to be at least three (because we have 3 evaluation points).
+
+We choose four and make the Ansatz:
+
+`Q_{j}(x)=q_{j,4}x^{4}+q_{j,3}x^{3}+q_{j,2}x^{2}+q_{j,1}x+q_{j,0}`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Witness reduction
+
+```
+\mathbb{W}_{right}=\left[\begin{array}{ccc}
+38638 & | & 62635\\
+62635 & | & 25157\\
+25157 & | & 38638
+\end{array}\right]
+```
+
+```
+Q_{1}^{right}(2)=38638\\
+Q_{1}^{right}(3)=62635\\
+Q_{1}^{right}(1)=25157
+```
+
+and similar
+
+```
+Q_{2}^{right}(2)=62635\\
+Q_{2}^{right}(3)=25157\\
+Q_{2}^{right}(1)=38638
+```
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Witness reduction
+
+We apply the Gaussian elimination:
+
+```
+\begin{array}{ccccccccc}
+1 & 0 & 0 & 30723\lambda_{1} & 58374\lambda_{2} & | & 40137 & || & 26217\\
+0 & 1 & 0 & 0 & 30723\lambda_{2} & | & 0 & || & 0\\
+0 & 0 & 1 & 30722\lambda_{1} & 39940\lambda_{2} & | & 65164 & || & 61575\\
+0 & 0 & 0 & \lambda_{1} & 0 & | & 0 & || & 0\\
+0 & 0 & 0 & 0 & \lambda_{2} & | & 0 & || & 0
+\end{array}
+```
+
+We have to choose the parameters `\lambda_{1}` and `\lambda_{2}` uniformly random from `\mathbb{F}_{2^{16}}`, so we just choose `\lambda_{1}=7` and `\lambda_{2}=1234` for `Q_{1}^{right}`, and we can do a similar computation for `Q_{2}^{right}`.
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Witness reduction
+
+So in the end, we get:
+
+`Q_{1}^{right}(x)=52553x^{4}+61918x^{3}+23047x^{2}+7x+1234`
+
+`Q_{2}^{right}(x)=57512x^{4}+1974x^{3}+20701x^{2}+12441x+4532`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Witness reduction
+
+Putting `a = 38638` and `b = 62635` into our `\mathcal{E}_{B,j}`  we get
+
+`\mathcal{E}_{B,j} = 6382x^2 + 31403x`
+
+`\mathcal{E}_{B,j} = 54163x^2 + 17789x`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Witness reduction
+
+Using these Polynomials we can finally define the APR-representation of our witnesses as
+
+`\mathbb{W}_{j}^{APR}:L\to\mathbb{F}_{2^{n}};x\mapsto\frac{Q_{j}(x)-\mathcal{E}_{B,j}(x)}{Z_{B,j}(x)}`
+
+Computing the following
+
+`\mathbb{W}_{1}^{APR,right}(x) = \frac{52553x^{4}+61918x^{3}+17129x^{2}+31404x+1234}{x^{3}+7x+6}`
+
+`\mathbb{W}_{2}^{APR,right}(x) = \frac{57512x^{4}+1974x^{3}+33614x^{2}+30180x+4532}{x^{3}+7x+6}`
+
+We know that this is well defined, because the denominator only has roots in `H`, which by definition has no interaction with `L`. If there was an interaction, then the denominator would be zero and this would fail.
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Witness reduction - fraudulent
+
+```
+\mathbb{W}_{wrong}=\left[\begin{array}{ccc}
+38638 & | & 62635\\
+65280 & | & 255\\
+43690 & | & 21845
+\end{array}\right]
+```
+
+`Q_{1}^{wrong}(2)=38638`
+
+`Q_{1}^{wrong}(3)=65280`
+
+`Q_{1}^{wrong}(1)=43690`
+
+and similar
+
+`Q_{2}^{wrong}(2)=62635`
+
+`Q_{2}^{wrong}(3)=255`
+
+`Q_{2}^{wrong}(1)=21845`
+
+-----
+## Algebraic Placement and Routing (APR)
+---
+#### Witness reduction - fraudulent
+
+Performing the similar computation for `Q^{right}`'s we get
+
+`Q_{1}^{wrong}(x)=63914x^{4}+43163x^{3}+62121x^{2}+2353x+3`
+
+`Q_{2}^{wrong}(x)=1283x^{4}+20663x^{3}+20854x^{2}+815x+21176`
+
+`\mathbb{W}_{1}^{APR,wrong}(x) = \frac{63914x^{4}+43163x^{3}+59975x^{2}+29594x+3}{x^{3}+7x+6}`
+
+`\mathbb{W}_{2}^{APR,wrong}(x) = \frac{1283x^{4}+20663x^{3}+33509x^{2}+18002x+21176}{x^{3}+7x+6}`
+
+-----
+## Reed-Solomon Interlude
+---
+#### Definition
+
+Mathematically speaking, a Reed-Solomon code is nothing but a linear map `c : V \to W` from a vector space `V` of dimension `m` into a vector space of dimension `n`, such that `n > m` and both vector spaces are over the same field.
+
+Let `\mathbb{F}_{<\rho n}[x]` be the set of all polynomials in the
+indetermined `x` with coefficients from `\mathbb{F}`, that have
+degree less then `\rho\cdot|S|` where `\rho\in(0,1]`.
+
+Then the Reed Solomon code is the map
+
+`RS:\mathbb{F}_{<\rho n}[x]\to\mathbb{F}^{n};f\mapsto(f(s_{1}),...,f(s_{n})`
+
+-----
+## Reed-Solomon Interlude
+---
+#### Checking the Reed-Solomon property
+
+The APR witnesses are Reed-Solomon codes from
+
+`RS[\mathbb{F}_{2^{16}}, L, \frac{5}{512}]`
+
+if and only if they are derived form a correct execution trace.
+
+Additionally, we can substitute the APR witnesses into the polynomials from `\Phi` and get functions which are Reed-Solomon codes from
+
+`RS[\mathbb{F}_{2^{16}}, L_{cmp}, \frac{17}{256}]`
+
+if and only if they are derived form a correct execution trace.
+
+For the rest of the talk, we will only focus on the focus regarding Reed-Solomon codes of `L`.
+
+-----
+## Reed-Solomon Interlude
+---
+#### Checking the Reed-Solomon property
+
+To see that `APR^{right}` is a real Reed-Solomon code and `APR^{wrong}` is not, we can execute the actual polynomial division of the numerator and denominator of the APR witnesses to check.
+
+**NOTE:** In a real world setting, this would be very expensive and is not part of the verification.
+
+This is why we target FRI as the final step, but for our example its useful to see how the wrong execution trace differs from the correct one.
+
+-----
+## Reed-Solomon Interlude
+---
+#### Checking the Reed-Solomon property
+
+`\mathbb{W}_{1}^{APR,right}(x) = 52553x+61918`
+
+`\mathbb{W}_{2}^{APR,right}(x) = 57512x+1974`
+
+`\mathbb{W}_{1}^{APR,wrong}(x) = 63914x+43163+\frac{9735x^{2}+6214x+63150}{x^{3}+7x+6}`
+
+`\mathbb{W}_{2}^{APR,wrong}(x) = 1283x+20663+\frac{39404x^{2}+58716x+48907}{x^{3}+7x+6}`
+
+So we see that the actual witnesses are polynomials, and that their degree is sufficiently small (given the rate factor `\frac{5}{512}`).
+
+The fraudulent witnesses are not polynomials at all, they are rational functions.
+
+-----
+## Reed Solomon Proximity Testing (RPT)
+---
+![pipeline-overview](images/pipeline-RPT.svg)
+
+We now need a process to check that our APR witness is an actual Reed-Solomon code, in an efficient way.
+
+We do this with algebraic linking interactive oracle proof (ALI).
+
+**NOTE:** we will only compute the polynomial `f^{(0)}` but not `g^{(0)}`.
+
+-----
+## Reed Solomon Proximity Testing (RPT)
+---
+#### Algebraic linking IOP (ALI)
+
+The result of the reductions are the pairs in the `R_{APR}`. The ALI phase uses a 1-round IOP to reduce the problem to a pair of binary RS proximity testing problems.
+
+The first step is to sample a Reed-Solomon code from
+
+`f_{mask}\in RS[\mathbb{F}_{2^{16}},\{256,...,767\},\frac{5}{512}]`
+
+and we choose
+
+`f_{mask}(x) =17443x+49`
+
+-----
+## Reed Solomon Proximity Testing (RPT)
+---
+#### Algebraic linking IOP (ALI) - Prover
+
+We begin the interactive protocol with the prover sending
+
+#### `\{ \mathbb{W}_{1}^{APR}(x),\mathbb{W}_{2}^{APR}(x),17443x+49\}`
+
+to the verifier.
+
+
+-----
+## Reed Solomon Proximity Testing (RPT)
+---
+#### Algebraic linking IOP (ALI) - Verifier
+
+The verifier then chooses 4 random numbers.
+
+##### `r_{1,0}^{right} =34451`
+
+##### `r_{1,1}^{right} =34571`
+
+##### `r_{2,0}^{right} =12567`
+
+##### `r_{2,1}^{right} =55632`
+
+These values are used to compute to the starting point of the FRI step:
+
+##### `f^{(0)}(x) = f_{mask}(x)`
+
+##### `+(r_{1,0}+r_{1,1}\cdot x^{|L|(\rho_{max}-\rho_{1})})\mathbb{W}_{1}^{APR,right}(x)`
+
+##### `+(r_{2,0}+r_{2,1}\cdot x^{|L|(\rho_{max}-\rho_{2})})\mathbb{W}_{2}^{APR,right}(x)`
+
+-----
+## Reed Solomon Proximity Testing (RPT)
+---
+#### Algebraic linking IOP (ALI) - Verifier
+
+Substituting the chosen randomness, we get
+
+`f^{(0)}(x) = \frac{29041x^{4}+15755x^{3}+18012x^{2}+34716x+36154}{x^{3}+7x+6}`
+
+
+The central point of the STARK system is to verify proximity of the function `f^{(0)}: L \to \mathbb{F}_{2^{16}}` to the Reed-Solomon code
+
+`RS[\mathbb{F}_{2^{16}}, L, \frac{5}{512}]`.
+
+-----
+## Fast RS IOP of proximity (FRI)
+---
+![pipeline-overview](images/pipeline-FRI.svg)
+
+How do we efficiently check the proximity to the Reed-Solomon codes?
+
+One answer is FRI.
+
+-----
+## Fast RS IOP of proximity (FRI)
+---
+#### Security Parameter
+
+The FRI protocol is parameterized by an integer, which we choose to be `\eta = 2`.
+
+This implies one additional round of interaction, because the zeroeth step was the ALI setup where `f^{(0)}` was exchanged between prover and verifier.
+
+-----
+## Fast RS IOP of proximity (FRI)
+---
+#### The Setup phase
+
+The prover and verifier "agree" on the affine-subspace `L_0 \subset L` of dimension `\eta = 2` given by
+
+`L_{0}^{(0)} = \{\langle00000001000000\lambda_{1}\lambda_{0}\rangle|\lambda_{0},\lambda_{1}\in\{0,1\}\}`
+
+`=\{256,257,258,259\}`
+
+`Zero_{L_{0}^{(0)}}(x)= (x+256)(x+257)(x+258)(x+259)`
+
+`= x^{4}+7x^{2}+6x+28111`
+
+-----
+## Fast RS IOP of proximity (FRI)
+---
+#### The Setup phase
+
+We need to compute one more layer, since `\eta = 2`
+
+`L^{(1)} = Zero_{L_{0}^{(0)}}(L^{(0)})`
+
+This is a larger expansion, and will be shown only in the paper.
+
+-----
+## Fast RS IOP of proximity (FRI)
+---
+#### The Commit phase
+
+The prover needs some randomness, which is sent by the verifier.
+
+Then the prover can compute the next `f` term from the ALI step like
+
+`f^{(1)}: L^{(1)} \to \mathbb{F}_{2^{16}}`
+
+-----
+## Fast RS IOP of proximity (FRI)
+---
+#### The Query phase
+
+The verifier will randomly choose from the lowest domain `L^{(1)}`
+
+-----
+## Resources
+---
+### References
+
+- [STARK paper](https://eprint.iacr.org/2018/046)
+- [FRI paper](https://eccc.weizmann.ac.il/report/2017/134)
+- [Reed-Solomon](https://algo.epfl.ch/_media/en/courses/2008-2009/mct_l06.pdf)
+- [Original Reed-Solomon paper](https://faculty.math.illinois.edu/~duursma/CT/RS-1960.pdf)
+
+-----
+## Resources
+---
+### Tools
+
+- https://hp.vector.co.jp/authors/VA021385/galois_calc.htm
+
+-----
+# Thank you
+---
+### Interested for more ZK math?
+
+Join us in the study club telegram group "ZK Study Group"
+
+mattgstevens@gmail.com
+
+mirco.richter@email.de
+
+</div>
+
+</div>
+
+<!-- <div id="impress-toolbar"></div> -->
+<!-- <div id="impress-help"></div> -->
+
+
+<!-- Extra modules for impress -->
+<script type="text/javascript" src="./js/highlight.pack.js"></script>
+<script type="text/javascript" src="./js/markdown.js"></script>
+
+<!-- impress -->
+<script type="text/javascript" src="./js/impress.js"></script>
+
+<!-- katex -->
+<!-- Too lazy to get all the fonts now.. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.1/dist/katex.min.css" integrity="sha384-dbVIfZGuN1Yq7/1Ocstc1lUEm+AT+/rCkibIcC/OmWo5f0EA48Vf8CytHzGrSwbQ" crossorigin="anonymous">
+<script type="text/javascript" src="./js/katex.min.js"></script>
+<script type="text/javascript" src="./js/katex-auto-render.min.js"></script>
+<script>
+  document.addEventListener('impress:init', () => {
+    // assuming that all code blocks in this presentation should be interpreted by katex
+    Array.from(document.getElementsByTagName('code')).forEach(el => { katex.render(el.textContent, el) });
+  }, false);
+
+  const impressApi = impress();
+  impressApi.init();
+</script>
+</body>
+</html>
