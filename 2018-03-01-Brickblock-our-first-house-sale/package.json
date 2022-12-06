@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "http-server": "^0.10.0",
+    "http-server": "^14.1.1",
     "klipse": "^7.1.1",
     "prettier": "^1.11.1"
   },
